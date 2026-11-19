@@ -1,0 +1,70 @@
+
+# ==================================================
+# AeroMind AI - Git Ignore Configuration
+# ==================================================
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python compiled files and cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets.json
+
+# IDE configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Application logs
+logs/
+*.log
+
+# ROS 2 generated files
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+
+# ROS and colcon generated files
+build/
+install/
+.colcon/
+
+# Gazebo temporary files
+*.world.log
+*.bag
+*.db3
+*.mcap
+
+# AI model weights and generated files
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Simulation output
+simulation/detected_image.jpg
+simulation/tracked_image.jpg
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak

@@ -1,0 +1,201 @@
+
+# ============================================================
+# AEROMIND AI
+# Autonomous Intelligent Drone System
+# Central Application Configuration
+# ============================================================
+
+project:
+  name: "AeroMind AI"
+  version: "0.1.0"
+  description: "AI-Powered Autonomous Drone System"
+  environment: "simulation"
+  debug: true
+
+# ============================================================
+# SIMULATION ENVIRONMENT
+# ============================================================
+
+simulation:
+  enabled: true
+  simulator: "Gazebo"
+  simulator_version: "Harmonic"
+  autopilot: "PX4"
+  vehicle_model: "gz_x500"
+  world: "default"
+  real_time_factor: 1.0
+
+# ============================================================
+# DRONE CONNECTION AND FLIGHT PARAMETERS
+# ============================================================
+
+drone:
+  vehicle_type: "quadcopter"
+  autopilot: "PX4"
+
+  connection:
+    system_address: "udpin://0.0.0.0:14540"
+    timeout_seconds: 30
+    retry_interval_seconds: 3
+
+  flight:
+    takeoff_altitude_m: 3.0
+    maximum_altitude_m: 10.0
+    maximum_horizontal_speed_mps: 5.0
+    maximum_vertical_speed_mps: 2.0
+    landing_speed_mps: 0.5
+
+  telemetry:
+    enabled: true
+    update_rate_hz: 5
+    record_flight_data: true
+
+# ============================================================
+# AUTONOMOUS NAVIGATION
+# ============================================================
+
+navigation:
+  enabled: false
+  mode: "waypoint"
+
+  waypoint:
+    acceptance_radius_m: 1.0
+    maximum_waypoints: 50
+
+  obstacle_avoidance:
+    enabled: false
+    minimum_clearance_m: 3.0
+    emergency_stop_distance_m: 1.5
+
+  path_planning:
+    algorithm: "astar"
+    replanning_enabled: true
+    replanning_interval_seconds: 2
+
+# ============================================================
+# ARTIFICIAL INTELLIGENCE
+# ============================================================
+
+ai:
+  enabled: false
+
+  object_detection:
+    enabled: false
+    framework: "ultralytics"
+    model: "yolo11n.pt"
+    confidence_threshold: 0.5
+    inference_device: "cpu"
+    image_size: 640
+
+  object_tracking:
+    enabled: false
+    algorithm: "bytetrack"
+
+  decision_engine:
+    enabled: false
+    decision_interval_seconds: 1
+    human_approval_required: true
+
+# ============================================================
+# CAMERA AND SENSOR PERCEPTION
+# ============================================================
+
+perception:
+  camera:
+    enabled: false
+    source: "simulation"
+    resolution_width: 1280
+    resolution_height: 720
+    frame_rate: 30
+
+  depth_estimation:
+    enabled: false
+    method: "simulation_depth"
+
+  sensors:
+    imu_enabled: true
+    gps_enabled: true
+    barometer_enabled: true
+
+# ============================================================
+# SAFETY AND FAILSAFE MANAGEMENT
+# ============================================================
+
+safety:
+  enabled: true
+
+  preflight_checks:
+    enabled: true
+    require_gps_lock: true
+    require_healthy_battery: true
+    require_autopilot_connection: true
+
+  battery:
+    warning_percent: 30
+    critical_percent: 20
+
+  geofence:
+    enabled: true
+    maximum_radius_m: 100
+    maximum_altitude_m: 10
+
+  failsafe:
+    return_to_launch_enabled: true
+    connection_loss_action: "return_to_launch"
+    critical_battery_action: "land"
+
+  manual_override:
+    enabled: true
+    required_for_autonomous_flight: true
+
+# ============================================================
+# ROS 2 COMMUNICATION
+# ============================================================
+
+ros2:
+  enabled: false
+  distribution: "jazzy"
+  namespace: "/aeromind"
+
+  topics:
+    camera: "/aeromind/camera/image_raw"
+    telemetry: "/aeromind/telemetry"
+    detections: "/aeromind/ai/detections"
+    navigation: "/aeromind/navigation/waypoints"
+
+# ============================================================
+# APPLICATION LOGGING
+# ============================================================
+
+logging:
+  enabled: true
+  level: "INFO"
+  directory: "logs"
+  file: "aeromind.log"
+  max_file_size_mb: 5
+  backup_count: 3
+
+# ============================================================
+# SYSTEM MONITORING
+# ============================================================
+
+monitoring:
+  enabled: false
+  health_check_interval_seconds: 5
+  cpu_monitoring: true
+  memory_monitoring: true
+  telemetry_monitoring: true
+
+
+
+# ============================================================
+# OBJECT-TRACKING CONFIGURATION
+# ========================================================
+  object_tracking:
+    enabled: false
+    algorithm: "iou"
+    iou_threshold: 0.3
+    max_missing_frames: 10
+    min_confirmed_hits: 3
+    max_tracks: 100
+    match_same_class_only: true
