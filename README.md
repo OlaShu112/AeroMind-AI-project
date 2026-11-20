@@ -240,6 +240,433 @@ To verify the Ollama API:
 
     curl http://localhost:11434/api/tags
 
+
+## Database Architecture and Configuration
+
+AeroMind AI uses PostgreSQL as its proposed primary database for persistent application data.
+
+PostgreSQL stores structured information, including users, chatbot conversations, messages, simulation sessions, flight commands, telemetry records and retrieved research metadata.
+
+The pgvector extension supports vector similarity searches for Retrieval-Augmented Generation (RAG).
+
+### Database Technology
+
+| Component | Technology |
+|---|---|
+| Relational Database | PostgreSQL |
+| Vector Database Extension | pgvector |
+| Python ORM | SQLAlchemy |
+| Database Driver | psycopg |
+| Schema Migrations | Alembic |
+| Environment Configuration | python-dotenv |
+
+### Database Architecture
+
+    AeroMind AI
+         |
+         v
+    Streamlit GUI
+         |
+         v
+    Python Application
+         |
+         +-----------------------+
+         |                       |
+         v                       v
+    AI / HybridRAG          Flight Controller
+         |                       |
+         +-----------+-----------+
+                     |
+                     v
+              SQLAlchemy ORM
+                     |
+                     v
+                PostgreSQL
+                     |
+          +----------+----------+
+          |                     |
+          v                     v
+    Application Tables       pgvector
+          |                     |
+          v                     v
+    Users, Messages,       Document Embeddings
+    Flights, Telemetry     and Similarity Search
+
+### Step 1 – Install PostgreSQL in Ubuntu
+
+Open an Ubuntu terminal.
+
+Update the package index:
+
+    sudo apt update
+
+Install PostgreSQL:
+
+    sudo apt install postgresql postgresql-contrib -y
+
+Verify PostgreSQL:
+
+    psql --version
+
+### Step 2 – Start PostgreSQL
+
+Start the PostgreSQL service:
+
+    sudo service postgresql start
+
+Check its status:
+
+    sudo service postgresql status
+
+PostgreSQL should report that the service is running.
+
+### Step 3 – Create the AeroMind Database
+
+Open the PostgreSQL administrator shell:
+
+    sudo -u postgres psql
+
+Create the application user:
+
+    CREATE USER aeromind_user WITH PASSWORD 'REPLACE_WITH_STRONG_PASSWORD';
+
+Create the database:
+
+    CREATE DATABASE aeromind_db OWNER aeromind_user;
+
+Exit PostgreSQL:
+
+    \q
+
+Replace the example password with a strong, unique password.
+
+Do not store real database passwords in source code or README files.
+
+### Step 4 – Install pgvector
+
+Install a pgvector package compatible with the installed PostgreSQL server version.
+
+Check the PostgreSQL version:
+
+    pg_config --version
+
+On Ubuntu, the package may be named:
+
+    postgresql-<version>-pgvector
+
+For example, if PostgreSQL 16 is installed and the package is available:
+
+    sudo apt install postgresql-16-pgvector
+
+Replace the version number with the installed PostgreSQL major version.
+
+If the package is unavailable, use the official pgvector installation instructions for the installed PostgreSQL version.
+
+After installation, connect to the AeroMind database:
+
+    sudo -u postgres psql -d aeromind_db
+
+Enable the extension:
+
+    CREATE EXTENSION IF NOT EXISTS vector;
+
+Verify:
+
+    SELECT extname FROM pg_extension WHERE extname = 'vector';
+
+Exit:
+
+    \q
+
+### Step 5 – Install Python Database Dependencies
+
+Navigate to the AeroMind project:
+
+    cd /mnt/c/xampp/htdocs/aeromind-ai
+
+Activate the virtual environment:
+
+    source .venv/bin/activate
+
+Install the required packages:
+
+    python -m pip install sqlalchemy "psycopg[binary]" python-dotenv pgvector alembic
+
+### Step 6 – Configure Environment Variables
+
+Create a `.env` file in the AeroMind project root:
+
+    nano .env
+
+Add:
+
+    DB_HOST=127.0.0.1
+    DB_PORT=5432
+    DB_NAME=aeromind_db
+    DB_USER=aeromind_user
+    DB_PASSWORD=REPLACE_WITH_STRONG_PASSWORD
+
+Save the file.
+
+The database password must match the password configured for the PostgreSQL user.
+
+Add the following entries to `.gitignore`:
+
+    .env
+    .venv/
+    __pycache__/
+    *.pyc
+
+Never commit database credentials to GitHub.
+
+### Step 7 – Create the Database Directory
+
+From the project root:
+
+    mkdir -p database
+
+Create the Python package:
+
+    touch database/__init__.py
+
+Create the database connection module:
+
+    touch database/connection.py
+
+### Step 8 – Configure the Python Database Connection
+
+Open:
+
+    database/connection.py
+
+Add the following Python code:
+
+    import os
+    from pathlib import Path
+
+    from dotenv import load_dotenv
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.engine import URL
+    from sqlalchemy.orm import sessionmaker
+
+    PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+    load_dotenv(PROJECT_ROOT / ".env")
+
+    DATABASE_URL = URL.create(
+        drivername="postgresql+psycopg",
+        username=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        host=os.getenv("DB_HOST", "127.0.0.1"),
+        port=int(os.getenv("DB_PORT", "5432")),
+        database=os.environ["DB_NAME"],
+    )
+
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+    )
+
+    SessionLocal = sessionmaker(
+        bind=engine,
+        autoflush=False,
+        autocommit=False,
+    )
+
+    def test_connection():
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT current_database()")
+            )
+
+            return result.scalar_one()
+
+This module establishes the reusable database engine and session factory.
+
+### Step 9 – Test the Database Connection
+
+Navigate to the project root:
+
+    cd /mnt/c/xampp/htdocs/aeromind-ai
+
+Activate the environment:
+
+    source .venv/bin/activate
+
+Run:
+
+    python -c "from database.connection import test_connection; print(test_connection())"
+
+Expected output:
+
+    aeromind_db
+
+This confirms that Python can connect to PostgreSQL.
+
+### Step 10 – Configure Database Models and Migrations
+
+The database schema should be defined using SQLAlchemy models.
+
+Create:
+
+    database/models.py
+
+Initial application tables should include:
+
+- users
+- chat_sessions
+- chat_messages
+- knowledge_documents
+- document_chunks
+- simulation_sessions
+- flight_commands
+- flight_telemetry
+- research_records
+
+Use Alembic to manage schema migrations rather than manually modifying production tables.
+
+Initialise Alembic:
+
+    alembic init database/migrations
+
+Configure Alembic to use the application's database connection and SQLAlchemy model metadata.
+
+After defining the models and configuring Alembic, generate the initial migration:
+
+    alembic revision --autogenerate -m "Initial AeroMind database schema"
+
+Review the generated migration before applying it.
+
+Apply the migration:
+
+    alembic upgrade head
+
+The migration commands require valid SQLAlchemy models and a configured Alembic environment.
+
+### Step 11 – Connect the Database to Streamlit
+
+The Streamlit application can import the shared database session factory:
+
+    from database.connection import SessionLocal
+
+Example:
+
+    with SessionLocal() as db:
+        # Execute application database operations here.
+        pass
+
+The Streamlit application must be updated to save and retrieve records using this connection.
+
+Creating the database connection alone does not automatically enable chat history persistence.
+
+### Step 12 – Connect PostgreSQL to HybridRAG
+
+HybridRAG can use PostgreSQL and pgvector to store and retrieve document embeddings.
+
+The proposed workflow is:
+
+    Document Upload
+          |
+          v
+    Document Processing
+          |
+          v
+    Text Chunking
+          |
+          v
+    Embedding Model
+          |
+          v
+    PostgreSQL + pgvector
+          |
+          v
+    Similarity Search
+          |
+          v
+    Retrieved Context
+          |
+          v
+    Ollama / Llama 3.2
+          |
+          v
+    Generated Answer
+
+An embedding model must be configured separately from the language model.
+
+Document embeddings must use a consistent vector dimension and compatible embedding model for both indexing and querying.
+
+The existing HybridRAG implementation must be updated to use this database-backed retrieval pipeline.
+
+### Step 13 – Connect Drone Simulation Records
+
+The flight-control subsystem can store:
+
+- Simulation session identifiers.
+- Connection status.
+- Flight commands.
+- Takeoff and landing timestamps.
+- Relative altitude.
+- Battery telemetry.
+- Vehicle status.
+- Flight errors.
+
+Telemetry should be written asynchronously or through a separate persistence component so database delays do not block flight-control operations.
+
+Database availability must not be required for emergency landing or PX4 safety functions.
+
+### Step 14 – Verify the Database
+
+Connect using the application credentials:
+
+    psql -h 127.0.0.1 -U aeromind_user -d aeromind_db
+
+List tables:
+
+    \dt
+
+List extensions:
+
+    \dx
+
+Exit:
+
+    \q
+
+Tables will appear after the application schema migrations have been applied successfully.
+
+### Step 15 – Starting AeroMind with PostgreSQL
+
+Start PostgreSQL:
+
+    sudo service postgresql start
+
+Start Ollama if necessary:
+
+    ollama serve
+
+Start the AeroMind GUI in a separate terminal:
+
+    cd /mnt/c/xampp/htdocs/aeromind-ai
+    source .venv/bin/activate
+    python -m streamlit run gui/rag_chat.py
+
+Open:
+
+    http://localhost:8501
+
+Start PX4 and Gazebo in another terminal:
+
+    cd ~/PX4-Autopilot
+    make px4_sitl gz_x500
+
+Start the supervised first-flight script in another terminal:
+
+    cd /mnt/c/xampp/htdocs/aeromind-ai
+    source .venv/bin/activate
+    python -m simulation.first_flight
+
+The database connection and persistence integrations must be implemented before AeroMind can save chatbot and flight records automatically.
+
 ## Running the AeroMind AI GUI
 
 AeroMind uses Streamlit to provide its interactive chatbot interface.
