@@ -1,0 +1,9 @@
+table_name,description,primary_key
+users,Stores application users,id
+chat_sessions,Stores AI chat conversations,id
+chat_messages,Stores user questions and AI responses,id
+knowledge_documents,Stores indexed knowledge document metadata,id
+retrieval_sources,Stores retrieved website and document references,id
+missions,Stores drone mission information,id
+flight_telemetry,Stores recorded flight telemetry,id
+system_events,Stores application events and errors,id
