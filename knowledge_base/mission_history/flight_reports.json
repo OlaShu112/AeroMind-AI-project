@@ -1,0 +1,15 @@
+{
+  "project": "AeroMind AI",
+  "description": "Simulated drone mission history",
+  "missions": [
+    {
+      "mission_id": "SIM-001",
+      "environment": "PX4 SITL and Gazebo",
+      "vehicle": "X500",
+      "planned_takeoff_altitude_m": 3,
+      "planned_hover_duration_seconds": 10,
+      "result": "Successful simulated takeoff, hover and landing",
+      "notes": "Initial flight test reported successful completion."
+    }
+  ]
+}
